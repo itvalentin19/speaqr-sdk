@@ -105,14 +105,15 @@ sdk.listLanguages()
 ```
 
 ### Possible Events
-`connect`: Emitted when connected to the socket server.
-`disconnect`: Emitted when disconnected from the socket server.
-`transcription`: Emitted when a transcription result is received.
-`speech_to_text`: Emitted when speech is converted to text.
-`translation`: Emitted when text translation is received.
-`text_to_speech`: Emitted when text is converted to speech.
-`streaming_transcription`: Emitted when live streaming transcription result is received.
-`error`: Emitted when there is a socket error.
+
+- `connect`: Emitted when connected to the socket server.
+- `disconnect`: Emitted when disconnected from the socket server.
+- `transcription`: Emitted when a transcription result is received.
+- `speech_to_text`: Emitted when speech is converted to text.
+- `translation`: Emitted when text translation is received.
+- `text_to_speech`: Emitted when text is converted to speech.
+- `streaming_transcription`: Emitted when live streaming transcription result is received.
+- `error`: Emitted when there is a socket error.
 
 ### Event Listeners
 
