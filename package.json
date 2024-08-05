@@ -1,7 +1,13 @@
 {
   "name": "speaqr-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SDK for Speaqr public API",
+  "author": {
+    "email": "lucianvalentin119@gmail.com",
+    "name": "Changlin"
+  },
+  "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -15,5 +21,22 @@
   "devDependencies": {
     "@types/node": "^14.18.63",
     "@types/socket.io-client": "^3.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/itvalentin19/speaqr-sdk.git"
+  },
+  "keywords": [
+    "Transcription",
+    "Translation",
+    "Audio",
+    "Voice",
+    "STT",
+    "TTS",
+    "Translator",
+    "typescript"
+  ],
+  "files": [
+    "dist"
+  ]
 }

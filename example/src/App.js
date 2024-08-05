@@ -3,8 +3,7 @@ import './App.css';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { Buffer } from 'buffer';
-
-var SpeaqrSDK = require('speaqr-sdk');
+import SpeaqrSDK from 'speaqr-sdk';
 
 const SPEAQR_SDK_API_KEY = "dxk9Rn7kCPbUYaEwyvNNsu";
 var speaqrSDK = new SpeaqrSDK(SPEAQR_SDK_API_KEY);
