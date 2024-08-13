@@ -73,7 +73,7 @@ var SpeaqrSDK = /** @class */ (function () {
     SpeaqrSDK.prototype.connect = function (params) {
         var _this = this;
         return new Promise(function (resolve, reject) {
-            _this.socket.emit('connect_stream', params, function (response) {
+            _this.socket.emit('live.connect', params, function (response) {
                 if (response.error) {
                     reject(response.error);
                 }

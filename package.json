@@ -1,6 +1,6 @@
 {
   "name": "speaqr-sdk",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "SDK for Speaqr public API",
   "author": {
     "email": "info@feelingdevs.com",
@@ -9,6 +9,7 @@
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"

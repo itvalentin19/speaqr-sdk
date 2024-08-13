@@ -1,4 +1,5 @@
 import io from 'socket.io-client';
+import AudioParams from "./types/AudioParams";
 
 class SpeaqrSDK {
     apiKey: string;
@@ -39,9 +40,9 @@ class SpeaqrSDK {
     }
 
     // Connect to streaming audio
-    connect(params: any) {
+    connect(params: AudioParams) {
         return new Promise((resolve, reject) => {
-            this.socket.emit('connect_stream', params, (response: any) => {
+            this.socket.emit('live.connect', params, (response: any) => {
                 if (response.error) {
                     reject(response.error);
                 } else {
@@ -61,7 +62,7 @@ class SpeaqrSDK {
     }
 
     // Send audio chunk
-    sendAudioChunk(audioChunk: any) {
+    sendAudioChunk(audioChunk: AudioParams) {
         return new Promise((resolve, reject) => {
             this.socket.emit('send_audio', audioChunk, (response: any) => {
                 if (response.error) {
