@@ -23,6 +23,17 @@ const apiKey = 'your_api_key';
 const sdk = new SpeaqrSDK(apiKey);
 ```
 
+### Initialize
+```javascript
+sdk.connect({
+  languageIdSource: "en-us",
+  languageIdTarget: "es-es",
+  send: 'buffer',
+  receive: 'mp3',
+  voice: "M", // "M": Male, "F": Female, "N": Neutral
+})
+```
+
 ### Connecting to Speaqr Server
 
 ```javascript
@@ -37,19 +48,47 @@ sdk.addListener('disconnect', () => {
 ```
 
 ### Streaming Audio
-
+#### Audio Streaming with URL
 ```javascript
 // Example of connecting to streaming audio
 const data = {
-  languageIdSource: "en-us",
-  languageIdTarget: "es-es",
-  send: 'streaming',
-  receive: 'mp3',
-  url: streamingUrl,
-  voice: voice, // "M": Male, "F": Female, "N": Neutral
+  languageIdSource: "en-us", // Can ignore this parameter in this function
+  languageIdTarget: "es-es", // Can ignore this parameter in this function
+  send: 'streaming', // Can ignore this parameter in this function
+  receive: 'mp3', // Can ignore this parameter in this function
+  url: streamingUrl, // Example URL: http://stream.live.vc.bbcmedia.co.uk/bbc_world_service
+  voice: "M", // "M": Male, "F": Female, "N": Neutral
   end: true
 }
-await speaqrSDK.sendAudioChunk(data);
+await sdk.sendAudioChunk(data);
+```
+
+#### Audio Streaming by recording
+```javascript
+const startRecording = () => {
+  sdk.connectStream(); // Initialize the live stream service
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size) {
+        sdk.sendStream(event.data); // Send audio data to the live stream service
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(track => track.stop());
+      setRecording(false);
+    };
+
+    mediaRecorder.start(1000);
+  }).catch(error => {
+    console.error('Error accessing microphone:', error);
+  });
+};
+const stopRecording = () => {
+  sdk.disconnectStream(); // Clear the live stream service
+}
 ```
 
 ### Sending Audio Chunk
@@ -71,10 +110,10 @@ reader.onload = async () => {
   const audioChunks = chunkAudio(arrayBuffer, CHUNK_SIZE);
   audioChunks.forEach(async (chunk, index) => {
     const data = {
-      languageIdSource: "en-us",
-      languageIdTarget: "es-es",
-      send: 'buffer',
-      receive: 'mp3',
+      languageIdSource: "en-us", // Can ignore this parameter in this function
+      languageIdTarget: "es-es", // Can ignore this parameter in this function
+      send: 'buffer', // Can ignore this parameter in this function
+      receive: 'mp3', // Can ignore this parameter in this function
       file: chunk,
       voice: voice, // "M": Male, "F": Female, "N": Neutral
       end: index === audioChunks.length - 1
