@@ -84,7 +84,35 @@ var SpeaqrSDK = /** @class */ (function () {
         });
     };
     // Disconnect from streaming audio
-    SpeaqrSDK.prototype.disconnect = function () {
+    SpeaqrSDK.prototype.connectStream = function () {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this.socket.emit('connect_stream', function (response) {
+                if (response.error) {
+                    reject(response.error);
+                }
+                else {
+                    resolve(response);
+                }
+            });
+        });
+    };
+    // Disconnect from streaming audio
+    SpeaqrSDK.prototype.sendStream = function (data) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this.socket.emit('write_stream', data, function (response) {
+                if (response.error) {
+                    reject(response.error);
+                }
+                else {
+                    resolve(response);
+                }
+            });
+        });
+    };
+    // Disconnect from streaming audio
+    SpeaqrSDK.prototype.disconnectStream = function () {
         var _this = this;
         return new Promise(function (resolve) {
             _this.socket.emit('disconnect_stream', function () {

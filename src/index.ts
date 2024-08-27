@@ -53,7 +53,33 @@ class SpeaqrSDK {
     }
 
     // Disconnect from streaming audio
-    disconnect() {
+    connectStream() {
+        return new Promise<void>((resolve, reject) => {
+            this.socket.emit('connect_stream', (response: any) => {
+                if (response.error) {
+                    reject(response.error);
+                } else {
+                    resolve(response);
+                }
+            });
+        });
+    }
+
+    // Disconnect from streaming audio
+    sendStream(data: any) {
+        return new Promise<void>((resolve, reject) => {
+            this.socket.emit('write_stream', data, (response: any) => {
+                if (response.error) {
+                    reject(response.error);
+                } else {
+                    resolve(response);
+                }
+            });
+        });
+    }
+
+    // Disconnect from streaming audio
+    disconnectStream() {
         return new Promise<void>((resolve) => {
             this.socket.emit('disconnect_stream', () => {
                 resolve();

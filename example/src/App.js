@@ -1,51 +1,76 @@
-import logo from './logo.svg';
 import './App.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { Buffer } from 'buffer';
 import SpeaqrSDK from 'speaqr-sdk';
 
-const SPEAQR_SDK_API_KEY = "dxk9Rn7kCPbUYaEwyvNNsu";
+const SPEAQR_SDK_API_KEY = "9jCzHnrT4oe7JBrPz5STjd"; //"dxk9Rn7kCPbUYaEwyvNNsu" // 
 var speaqrSDK = new SpeaqrSDK(SPEAQR_SDK_API_KEY);
 
 function App() {
   const [audioData, setAudioData] = useState(null);
   const [transcription, setTranscription] = useState(null);
+  const [translation, setTranslation] = useState(null);
   const [languages, setLanguages] = useState([]);
   const [sourceLanguage, setSourceLanguage] = useState('en-us');
   const [targetLanguage, setTargetLanguage] = useState('es-es');
   const [voice, setVoice] = useState('M');
   const [resultData, setResultData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [streamingUrl, setStreamingUrl] = useState("");
+  const [streamingUrl, setStreamingUrl] = useState("http://stream.live.vc.bbcmedia.co.uk/bbc_world_service"); // Example URL: http://stream.live.vc.bbcmedia.co.uk/bbc_world_service
   const [streamingTranscription, setStreamingTranscription] = useState(null);
   const CHUNK_SIZE = 102400;
+  const mediaRecorder = useRef(null);
+  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
+    speaqrSDK.connect({
+      languageIdSource: sourceLanguage,
+      languageIdTarget: targetLanguage,
+      send: 'buffer',
+      receive: 'mp3',
+      voice: voice,
+    })
     getLanguages();
   }, []);
 
   useEffect(() => {
     speaqrSDK.addListener('speech_to_text', handleSTTResult)
     speaqrSDK.addListener('text_to_speech', handleTTSResult)
+    speaqrSDK.addListener('translation', handleTTTResult)
     speaqrSDK.addListener('streaming_transcription', handleStreamingResult)
 
     return () => {
       speaqrSDK.removeListener('speech_to_text', handleSTTResult)
       speaqrSDK.removeListener('text_to_speech', handleTTSResult)
+      speaqrSDK.removeListener('translation', handleTTTResult)
       speaqrSDK.removeListener('streaming_transcription', handleStreamingResult)
     }
-  }, [speaqrSDK]);
+  }, [speaqrSDK, streamingTranscription]);
+
+  useEffect(() => {
+    if (audioData?.size) {
+      sendAudio();
+    }
+  }, [mediaRecorder, audioData]);
+
+  const handleTTTResult = (data) => {
+    console.log("Translation result received:");
+    console.log(data);
+    setTranslation(data);
+  }
 
   const handleStreamingResult = (data) => {
     console.log("Streaming Transcription result received:");
     console.log(data);
-    let text = streamingTranscription + " " + data;
-    setStreamingTranscription(text);
+    if (streamingTranscription) {
+      data = streamingTranscription + " " + data;
+    }
+    setStreamingTranscription(data);
   }
 
   const handleSTTResult = (data) => {
-    console.log("TTS result received:");
+    console.log("STT result received:");
     console.log(data);
     setTranscription(data);
   }
@@ -60,7 +85,7 @@ function App() {
   const getLanguages = async () => {
     var langs = await speaqrSDK.listLanguages();
     console.log(langs);
-    if (langs) {
+    if (langs && Array.isArray(langs)) {
       setLanguages(langs);
     }
   }
@@ -79,30 +104,44 @@ function App() {
   };
 
   const startRecording = () => {
+    setRecording(true);
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      const mediaRecorder = new MediaRecorder(stream);
-      const chunks = [];
+      mediaRecorder.current = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
+      mediaRecorder.current.ondataavailable = (event) => {
+        console.log(event);
+        
+        const audioBlob = new Blob([event.data], { type: 'audio/wav' });
+        if (audioBlob?.size) {
+          sendAudio(audioBlob);
+        }
       };
 
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-        setAudioData(audioBlob);
-        console.log('Recording stopped:', audioBlob);
-      };
-
-      mediaRecorder.start();
-
-      setTimeout(() => {
-        mediaRecorder.stop();
+      mediaRecorder.current.onstop = () => {
         stream.getTracks().forEach(track => track.stop());
-      }, 5000); // Stop recording after 5 seconds
+        setRecording(false);
+      };
+
+      mediaRecorder.current.start();
+      // Request data manually every 3 seconds
+      const intervalId = setInterval(() => {
+        if (mediaRecorder.current.state === 'recording') {
+          mediaRecorder.current.requestData();
+        } else {
+          clearInterval(intervalId);
+        }
+      }, 5000);
     }).catch(error => {
       console.error('Error accessing microphone:', error);
+      setRecording(false);
     });
   };
+  const stopRecording = () => {
+    if (mediaRecorder?.current) {
+      mediaRecorder.current.stop();
+    }
+    setRecording(false);
+  }
   const chunkAudio = (arrayBuffer, chunkSize) => {
     const chunks = [];
     for (let i = 0; i < arrayBuffer.byteLength; i += chunkSize) {
@@ -111,18 +150,18 @@ function App() {
     return chunks.map(chunk => Buffer.from(chunk));
   };
 
-  const sendAudio = () => {
-    console.log(audioData);
-    if (speaqrSDK && audioData) {
+  const sendAudio = (audioChuck = audioData) => {
+    if (speaqrSDK && audioChuck) {
       try {
-        setLoading(true);
+        // setLoading(true);
         const reader = new FileReader();
         reader.onload = async () => {
           const arrayBuffer = reader.result;
           const audioChunks = chunkAudio(arrayBuffer, CHUNK_SIZE);
+          console.log(audioChunks.length);
+
           audioChunks.forEach(async (chunk, index) => {
             console.log('Audio chunk sent');
-            console.log(chunk);
             const data = {
               languageIdSource: sourceLanguage,
               languageIdTarget: targetLanguage,
@@ -135,7 +174,7 @@ function App() {
             await speaqrSDK.sendAudioChunk(data);
           });
         };
-        reader.readAsArrayBuffer(audioData);
+        reader.readAsArrayBuffer(audioChuck);
       } catch (error) {
         console.error('Error sending audio chunk:', error);
       } finally {
@@ -197,9 +236,14 @@ function App() {
           </label>
         </div>
         <div>
-          <button onClick={startRecording}>Start Recording</button>
+          {
+            recording ?
+              <button onClick={stopRecording}>Stop Recording</button>
+              :
+              <button onClick={startRecording}>Start Recording</button>
+          }
           <input type="file" accept="audio/*" onChange={handleAudioUpload} />
-          <button onClick={sendAudio} disabled={!audioData}>Translate</button>
+          <button onClick={() => sendAudio()} disabled={!audioData}>Translate</button>
         </div>
         {audioData && (
           <audio controls key={URL.createObjectURL(audioData)}>
@@ -215,10 +259,17 @@ function App() {
           </div>
         )}
 
+        {translation && (
+          <div>
+            <h4>Translation Result:</h4>
+            <p>{translation}</p>
+          </div>
+        )}
+
         <h4>Result Audio</h4>
         {
           loading && (
-            <div class="spinner"></div>
+            <div className="spinner"></div>
           )
         }
         {loading === false && resultData && (
