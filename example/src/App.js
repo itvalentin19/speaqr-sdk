@@ -32,7 +32,7 @@ function App() {
       voice: voice,
     })
     getLanguages();
-  }, []);
+  }, [sourceLanguage, targetLanguage, voice]);
 
   useEffect(() => {
     speaqrSDK.addListener('speech_to_text', handleSTTResult)
@@ -105,15 +105,13 @@ function App() {
 
   const startRecording = () => {
     setRecording(true);
+    speaqrSDK.connectStream();
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      mediaRecorder.current = new MediaRecorder(stream);
+      mediaRecorder.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
       mediaRecorder.current.ondataavailable = (event) => {
-        console.log(event);
-        
-        const audioBlob = new Blob([event.data], { type: 'audio/wav' });
-        if (audioBlob?.size) {
-          sendAudio(audioBlob);
+        if (event.data.size) {
+          speaqrSDK.sendStream(event.data);
         }
       };
 
@@ -122,15 +120,7 @@ function App() {
         setRecording(false);
       };
 
-      mediaRecorder.current.start();
-      // Request data manually every 3 seconds
-      const intervalId = setInterval(() => {
-        if (mediaRecorder.current.state === 'recording') {
-          mediaRecorder.current.requestData();
-        } else {
-          clearInterval(intervalId);
-        }
-      }, 5000);
+      mediaRecorder.current.start(1000);
     }).catch(error => {
       console.error('Error accessing microphone:', error);
       setRecording(false);
@@ -141,6 +131,7 @@ function App() {
       mediaRecorder.current.stop();
     }
     setRecording(false);
+    speaqrSDK.disconnectStream();
   }
   const chunkAudio = (arrayBuffer, chunkSize) => {
     const chunks = [];
@@ -154,6 +145,9 @@ function App() {
     if (speaqrSDK && audioChuck) {
       try {
         // setLoading(true);
+        console.log("audioChuck");
+        console.log(audioChuck);
+
         const reader = new FileReader();
         reader.onload = async () => {
           const arrayBuffer = reader.result;
