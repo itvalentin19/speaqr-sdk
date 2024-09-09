@@ -17,29 +17,50 @@ npm install speaqr-sdk
 ```javascript
 // Import the SDK
 import SpeaqrSDK from 'speaqr-sdk';
+```
 
+### Initialize
+```javascript
 // Initialize with your API key
 const apiKey = 'your_api_key';
 const sdk = new SpeaqrSDK(apiKey);
 ```
 
-### Initialize
+### Connecting to Speaqr Server
 ```javascript
+// Connect to Speaqr server
 sdk.connect({
   languageIdSource: "en-us",
   languageIdTarget: "es-es",
   send: 'buffer',
   receive: 'mp3',
   voice: "M", // "M": Male, "F": Female, "N": Neutral
+}).then(res => {
+  // Connected to service successfully
+}).catch(err => {
+  // Error occured due to source or target language is not correct.
+  /**
+   * If the source language `params.languageIdSource` is not available
+   * response = {
+          "success": false,
+          "error": true,
+          "code": "source_language_not_supported",
+          "description": "Se le pasa un idioma de origen no soportado"
+      }
+
+      If the target language `params.languageIdTarget` is not available
+      response = {
+          "success": false,
+          "error": true,
+          "code": "target_language_not_supported",
+          "description": "Se le pasa un idioma de destino no soportado"
+      }
+    */
 })
-```
 
-### Connecting to Speaqr Server
-
-```javascript
-// Connect to Speaqr server
-sdk.addListener('connect', () => {
-    console.log('Connected to Speaqr server');
+sdk.addListener('connect_error', () => {
+    console.log('Failed to connect Speaqr server');
+    // { code: "bad_authentication", description: "Cuando se le pasa un apikey no válido" }
 });
 
 sdk.addListener('disconnect', () => {
@@ -47,11 +68,16 @@ sdk.addListener('disconnect', () => {
 });
 ```
 
+### Check connection status
+```javascript
+console.log(sdk.isConnected); // "true" or "false"
+```
+
 ### Streaming Audio
 #### Audio Streaming with URL
 ```javascript
 // Example of connecting to streaming audio
-const data = {
+const params = {
   languageIdSource: "en-us", // Can ignore this parameter in this function
   languageIdTarget: "es-es", // Can ignore this parameter in this function
   send: 'streaming', // Can ignore this parameter in this function
@@ -60,7 +86,28 @@ const data = {
   voice: "M", // "M": Male, "F": Female, "N": Neutral
   end: true
 }
-await sdk.sendAudioChunk(data);
+sdk.sendAudioChunk(params)
+.catch(err => {
+  /**
+   * If the source language `params.languageIdSource` is not available
+   * response = {
+          "success": false,
+          "error": true,
+          "code": "source_language_not_supported",
+          "description": "Se le pasa un idioma de origen no soportado"
+      }
+
+    * If the target language `params.languageIdTarget` is not available
+    *  response = {
+          "success": false,
+          "error": true,
+          "code": "target_language_not_supported",
+          "description": "Se le pasa un idioma de destino no soportado"
+      }
+
+      Another available error codes: "invalid_data_provided", "socket_server_not_connected", "processing_failed"
+    */
+});
 ```
 
 #### Audio Streaming by recording
@@ -146,12 +193,14 @@ sdk.listLanguages()
 ### Possible Events
 
 - `connect`: Emitted when connected to the socket server.
+- `connect_error`: Emitted when connection failed due to invalid authentication token.
 - `disconnect`: Emitted when disconnected from the socket server.
 - `transcription`: Emitted when a transcription result is received.
 - `speech_to_text`: Emitted when speech is converted to text.
 - `translation`: Emitted when text translation is received.
 - `text_to_speech`: Emitted when text is converted to speech.
 - `streaming_transcription`: Emitted when live streaming transcription result is received.
+- `socket_server_disconnected`: Emitted when the socket server which provides STT, translation, and TTS services is disconnected on API server.
 - `error`: Emitted when there is a socket error.
 
 ### Event Listeners

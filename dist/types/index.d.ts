@@ -3,8 +3,11 @@ declare class SpeaqrSDK {
     apiKey: string;
     socket: any;
     publicApi: string;
+    events: string[];
+    isConnected: boolean;
     constructor(apiKey: string);
     connect(params: AudioParams): Promise<unknown>;
+    disconnect(): Promise<unknown>;
     connectStream(): Promise<void>;
     sendStream(data: any): Promise<void>;
     disconnectStream(): Promise<void>;

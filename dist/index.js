@@ -38,6 +38,8 @@ import io from 'socket.io-client';
 var SpeaqrSDK = /** @class */ (function () {
     function SpeaqrSDK(apiKey) {
         this.publicApi = "http://apispeaqr.feelingdevs.com:8080";
+        this.events = ['connect', 'connect_error', 'disconnect', 'transcription', 'speech_to_text', 'translation', 'text_to_speech', 'streaming_transcription', 'socket_server_disconnected', 'error'];
+        this.isConnected = false;
         this.apiKey = apiKey;
         this.socket = io('ws://apispeaqr.feelingdevs.com:8080', {
             auth: {
@@ -46,6 +48,9 @@ var SpeaqrSDK = /** @class */ (function () {
         });
         this.socket.on('connect', function () {
             console.log('Connected to socket server');
+        });
+        this.socket.on('connect_error', function (error) {
+            console.error('Connection error:', JSON.parse(error.message)); // { code: "bad_authentication", description: "Cuando se le pasa un apikey no válido" }
         });
         this.socket.on('disconnect', function () {
             console.log('Disconnected from socket server');
@@ -65,22 +70,51 @@ var SpeaqrSDK = /** @class */ (function () {
         this.socket.on('streaming_transcription', function (data) {
             console.log('Live Stream Transcription 3️⃣', data);
         });
+        this.socket.on('socket_server_disconnected', function () {
+            console.log('Scoket Server Disconnected');
+        });
         this.socket.on('error', function (error) {
             console.error('Socket error:', error);
         });
     }
-    // Connect to streaming audio
+    // Initialize the socket service
     SpeaqrSDK.prototype.connect = function (params) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             _this.socket.emit('live.connect', params, function (response) {
                 if (response.error) {
-                    reject(response.error);
+                    /**
+                     * If the source language `params.languageIdSource` is not available
+                     * response = {
+                            "success": false,
+                            "error": true,
+                            "code": "source_language_not_supported",
+                            "description": "Se le pasa un idioma de origen no soportado"
+                        }
+
+                        If the target language `params.languageIdTarget` is not available
+                        response = {
+                            "success": false,
+                            "error": true,
+                            "code": "target_language_not_supported",
+                            "description": "Se le pasa un idioma de destino no soportado"
+                        }
+                     */
+                    _this.isConnected = false;
+                    reject(response);
                 }
                 else {
+                    _this.isConnected = true;
                     resolve(response);
                 }
             });
+        });
+    };
+    // Disconnect socket service
+    SpeaqrSDK.prototype.disconnect = function () {
+        var _this = this;
+        return new Promise(function (resolve) {
+            _this.socket.emit('disconnect');
         });
     };
     // Disconnect from streaming audio
@@ -126,7 +160,26 @@ var SpeaqrSDK = /** @class */ (function () {
         return new Promise(function (resolve, reject) {
             _this.socket.emit('send_audio', audioChunk, function (response) {
                 if (response.error) {
-                    reject(response.error);
+                    /**
+                     * If the source language `params.languageIdSource` is not available
+                     * response = {
+                            "success": false,
+                            "error": true,
+                            "code": "source_language_not_supported",
+                            "description": "Se le pasa un idioma de origen no soportado"
+                        }
+
+                     * If the target language `params.languageIdTarget` is not available
+                     *  response = {
+                            "success": false,
+                            "error": true,
+                            "code": "target_language_not_supported",
+                            "description": "Se le pasa un idioma de destino no soportado"
+                        }
+
+                        Another available error codes: "invalid_data_provided", "socket_server_not_connected", "processing_failed"
+                     */
+                    reject(response);
                 }
                 else {
                     resolve(response);
@@ -136,10 +189,22 @@ var SpeaqrSDK = /** @class */ (function () {
     };
     // Add event listener
     SpeaqrSDK.prototype.addListener = function (event, callback) {
+        if (this.events.includes(event) === false) {
+            callback({ error: true, code: "listener_not_valid", description: "Cuando se pasa un listener que no está en la lista" });
+        }
+        if (typeof callback != "function") {
+            throw (new Error("callback_is_not_a_function"));
+        }
         this.socket.on(event, callback);
     };
     // Remove event listener
     SpeaqrSDK.prototype.removeListener = function (event, callback) {
+        if (this.events.includes(event) === false) {
+            callback({ error: true, code: "listener_not_valid", description: "Cuando se pasa un listener que no está en la lista" });
+        }
+        if (typeof callback != "function") {
+            throw (new Error("callback_is_not_a_function"));
+        }
         this.socket.off(event, callback);
     };
     // List supported languages
