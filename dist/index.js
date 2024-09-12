@@ -38,7 +38,7 @@ import io from 'socket.io-client';
 var SpeaqrSDK = /** @class */ (function () {
     function SpeaqrSDK(apiKey) {
         this.publicApi = "http://apispeaqr.feelingdevs.com:8080";
-        this.events = ['connect', 'connect_error', 'disconnect', 'transcription', 'speech_to_text', 'translation', 'text_to_speech', 'streaming_transcription', 'socket_server_disconnected', 'error'];
+        this.events = ['connect', 'connect_error', 'disconnect', 'transcription', 'speech_to_text', 'translation', 'text_to_speech', 'text_to_speech_streaming', 'streaming_transcription', 'socket_server_connected', 'socket_server_disconnected', 'error'];
         this.isConnected = false;
         this.apiKey = apiKey;
         this.socket = io('ws://apispeaqr.feelingdevs.com:8080', {
@@ -47,31 +47,37 @@ var SpeaqrSDK = /** @class */ (function () {
             }
         });
         this.socket.on('connect', function () {
-            console.log('Connected to socket server');
+            // console.log('Connected to socket server');
         });
         this.socket.on('connect_error', function (error) {
             console.error('Connection error:', JSON.parse(error.message)); // { code: "bad_authentication", description: "Cuando se le pasa un apikey no válido" }
         });
         this.socket.on('disconnect', function () {
-            console.log('Disconnected from socket server');
+            // console.log('Disconnected from socket server');
         });
         this.socket.on('transcription', function (data) {
-            console.log('Transcription:', data);
+            // console.log('Transcription:', data);
         });
         this.socket.on('speech_to_text', function (data) {
-            console.log('Speech to Text 1️⃣:', data);
+            // console.log('Speech to Text 1️⃣:', data);
         });
         this.socket.on('translation', function (data) {
-            console.log('Translated Text 2️⃣:', data);
+            // console.log('Translated Text 2️⃣:', data);
         });
         this.socket.on('text_to_speech', function (data) {
-            console.log('Text to Speech 3️⃣', data);
+            // console.log('Text to Speech 3️⃣', data);
+        });
+        this.socket.on('text_to_speech_streaming', function (data) {
+            // console.log('Text to Speech Streaming 4️⃣', data);
         });
         this.socket.on('streaming_transcription', function (data) {
-            console.log('Live Stream Transcription 3️⃣', data);
+            // console.log('Live Stream Transcription 5️⃣', data);
+        });
+        this.socket.on('socket_server_connected', function () {
+            // console.log('Scoket Server Connected 👌');
         });
         this.socket.on('socket_server_disconnected', function () {
-            console.log('Scoket Server Disconnected');
+            // console.log('Scoket Server Disconnected 👎');
         });
         this.socket.on('error', function (error) {
             console.error('Socket error:', error);
@@ -114,7 +120,8 @@ var SpeaqrSDK = /** @class */ (function () {
     SpeaqrSDK.prototype.disconnect = function () {
         var _this = this;
         return new Promise(function (resolve) {
-            _this.socket.emit('disconnect');
+            _this.socket.disconnect();
+            resolve();
         });
     };
     // Disconnect from streaming audio
@@ -123,7 +130,7 @@ var SpeaqrSDK = /** @class */ (function () {
         return new Promise(function (resolve, reject) {
             _this.socket.emit('connect_stream', function (response) {
                 if (response.error) {
-                    reject(response.error);
+                    reject(response);
                 }
                 else {
                     resolve(response);
@@ -137,7 +144,7 @@ var SpeaqrSDK = /** @class */ (function () {
         return new Promise(function (resolve, reject) {
             _this.socket.emit('write_stream', data, function (response) {
                 if (response.error) {
-                    reject(response.error);
+                    reject(response);
                 }
                 else {
                     resolve(response);
@@ -149,8 +156,8 @@ var SpeaqrSDK = /** @class */ (function () {
     SpeaqrSDK.prototype.disconnectStream = function () {
         var _this = this;
         return new Promise(function (resolve) {
-            _this.socket.emit('disconnect_stream', function () {
-                resolve();
+            _this.socket.emit('disconnect_stream', function (response) {
+                resolve(response);
             });
         });
     };

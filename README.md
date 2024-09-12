@@ -33,7 +33,7 @@ sdk.connect({
   languageIdSource: "en-us",
   languageIdTarget: "es-es",
   send: 'buffer',
-  receive: 'mp3',
+  receive: 'mp3' | 'streaming',
   voice: "M", // "M": Male, "F": Female, "N": Neutral
 }).then(res => {
   // Connected to service successfully
@@ -81,7 +81,7 @@ const params = {
   languageIdSource: "en-us", // Can ignore this parameter in this function
   languageIdTarget: "es-es", // Can ignore this parameter in this function
   send: 'streaming', // Can ignore this parameter in this function
-  receive: 'mp3', // Can ignore this parameter in this function
+  receive: 'mp3' | 'streaming', // Can ignore this parameter in this function
   url: streamingUrl, // Example URL: http://stream.live.vc.bbcmedia.co.uk/bbc_world_service
   voice: "M", // "M": Male, "F": Female, "N": Neutral
   end: true
@@ -160,7 +160,7 @@ reader.onload = async () => {
       languageIdSource: "en-us", // Can ignore this parameter in this function
       languageIdTarget: "es-es", // Can ignore this parameter in this function
       send: 'buffer', // Can ignore this parameter in this function
-      receive: 'mp3', // Can ignore this parameter in this function
+      receive: 'mp3' | 'streaming', // Can ignore this parameter in this function
       file: chunk,
       voice: voice, // "M": Male, "F": Female, "N": Neutral
       end: index === audioChunks.length - 1
@@ -197,9 +197,45 @@ sdk.listLanguages()
 - `disconnect`: Emitted when disconnected from the socket server.
 - `transcription`: Emitted when a transcription result is received.
 - `speech_to_text`: Emitted when speech is converted to text.
+    ```
+    response: {
+      languageIdSource: string,
+      transcription: string
+    }
+    ```
 - `translation`: Emitted when text translation is received.
+    ```
+    response: {
+      languageIdSource: string,
+      transcription: string,
+      languageIdTarget: string,
+      translation: string,
+    }
+    ```
 - `text_to_speech`: Emitted when text is converted to speech.
+    ```
+    response: {
+      languageIdTarget: string,
+      translation: string,
+      mp3: buffer
+    }
+    ```
+- `text_to_speech_streaming`: Emitted when text is converted to speech and the receive type is "streaming".
+    ```
+    response: {
+      languageIdTarget: string,
+      translation: string,
+      streamingUrl: string
+    }
+    ```
 - `streaming_transcription`: Emitted when live streaming transcription result is received.
+    ```
+    response: {
+      languageIdSource: string,
+      transcription: string,
+    }
+    ```
+- `socket_server_connected`: Emitted when the socket server which provides STT, translation, and TTS services is connected on API server.
 - `socket_server_disconnected`: Emitted when the socket server which provides STT, translation, and TTS services is disconnected on API server.
 - `error`: Emitted when there is a socket error.
 
